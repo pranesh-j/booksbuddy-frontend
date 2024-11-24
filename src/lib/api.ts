@@ -1,7 +1,7 @@
 import axios from 'axios';
 import type { Book } from '@/types';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://booksbuddy-backend.onrender.com/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
 
 const api = axios.create({
   baseURL: API_URL,
@@ -17,7 +17,7 @@ export const simplifyText = async (text: string): Promise<Book> => {
     const response = await api.post('/process/', { text });
     return response.data;
   } catch (error) {
-    console.error('API Error:', error);
+    console.error('Error simplifying text:', error);
     throw error;
   }
 };

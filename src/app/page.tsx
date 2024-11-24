@@ -1,9 +1,11 @@
-import BookBuddy from '@/components/BookBuddy';
+'use client'
+
+import BookBuddy from '@/components/BookBuddy'
 
 export default function Home() {
   return (
-    <main>
+    <main className="min-h-screen">
       <BookBuddy />
     </main>
-  );
+  )
 }

@@ -1,29 +1,34 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Camera, Plus, ChevronLeft, ChevronRight, BookOpen, Sun, Moon, BookMarked, Settings } from 'lucide-react';
+import { Camera, Plus, ChevronLeft, ChevronRight, BookOpen, Sun, Moon, BookMarked, Settings, Menu } from 'lucide-react';
 import { motion, AnimatePresence, useAnimation } from 'framer-motion';
 import axios from 'axios';
 import Sidebar from './Sidebar';
-import { NameBookDialog } from './NameBookDialog';
-import { getAllBooks, getBook, updateBookTitle, simplifyText, addPage, uploadImage } from '@/lib/api';
+import { getAllBooks, getBook, updateBookTitle, simplifyText, addPage } from '@/lib/api';
 import type { Book, Page } from '@/types';
-import { useDarkMode } from '@/hooks/useDarkMode';
+import { NameBookDialog } from './NameBookDialog';
 
 const BookBuddy = () => {
-  const [isDarkMode, setIsDarkMode] = useDarkMode();
   // State definitions
   const [isReading, setIsReading] = useState(false);
   const [currentPage, setCurrentPage] = useState(0);
   const [text, setText] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('darkMode');
+      return saved ? JSON.parse(saved) : false;
+    }
+    return false;
+  });
   const [currentBookId, setCurrentBookId] = useState<number | null>(null);
   const [pages, setPages] = useState<Page[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [books, setBooks] = useState<Book[]>([]);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [suggestedTitle, setSuggestedTitle] = useState<string>('');
   const [showNameDialog, setShowNameDialog] = useState(false);
-  const [suggestedTitle, setSuggestedTitle] = useState('');
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true); 
 
   // Animation controls
   const controls = useAnimation();
@@ -50,14 +55,25 @@ const BookBuddy = () => {
 
   const handleBookSelect = async (bookId: number) => {
     try {
-      const book = await getBook(bookId);
-      setCurrentBookId(book.id);
-      setPages(book.pages);
-      setIsReading(true);
-      setCurrentPage(0);
+        // If we're already on this book, don't reload it
+        if (currentBookId === bookId) {
+            return;
+        }
+
+        const book = await getBook(bookId);
+        if (book && book.pages) {
+            setCurrentBookId(book.id);
+            setPages(book.pages);  // Make sure pages are properly set
+            setIsReading(true);
+            setCurrentPage(0);
+            setText('');
+            
+            // Force a re-render of the pages
+            await loadBooks();  // Refresh the books list to get latest data
+        }
     } catch (error) {
-      console.error('Error loading book:', error);
-      setError('Failed to load book');
+        console.error('Error loading book:', error);
+        setError('Failed to load book');
     }
   };
 
@@ -73,9 +89,8 @@ const BookBuddy = () => {
         if (currentBookId) {
             await updateBookTitle(currentBookId, title);
             await loadBooks();
+            setShowNameDialog(false);
         }
-        setShowNameDialog(false);
-        setIsReading(false);
     } catch (error) {
         console.error('Error updating book title:', error);
         setError('Failed to update book title');
@@ -98,13 +113,32 @@ const BookBuddy = () => {
     setError(null);
 
     try {
-        const extractedText = await uploadImage(formData);
-        setText(extractedText.replace(/\[TextBlock\(text=|"\)]/g, '')
-            .replace(/\\n/g, '\n')
-            .trim());
-    } catch (error) {
-        setError('Failed to process image');
-        console.error('Error uploading image:', error);
+        const response = await axios.post('http://localhost:8000/api/upload-image/', formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+        });
+
+        if (response.data?.extracted_text) {
+            // Clean up any remaining formatting
+            const cleanText = response.data.extracted_text
+                .replace(/\[TextBlock\(text=|"\)]/g, '')
+                .replace(/\\n/g, '\n')
+                .trim();
+            
+            setText(cleanText);
+        } else {
+            throw new Error('No text extracted from image');
+        }
+    } catch (err) {
+        let errorMessage = 'Failed to process image';
+        if (axios.isAxiosError(err) && err.response?.data?.error) {
+            errorMessage = err.response.data.error;
+        } else if (err instanceof Error) {
+            errorMessage = err.message;
+        }
+        setError(errorMessage);
+        console.error('Error uploading image:', err);
     } finally {
         setIsProcessing(false);
     }
@@ -114,42 +148,36 @@ const BookBuddy = () => {
     if (!text.trim()) return;
     setIsProcessing(true);
     setError(null);
-    
     try {
-        if (currentBookId) {
-            // Add new page to existing book
-            const response = await addPage(currentBookId, text);
-            if (response && response.pages) {
-                setPages(response.pages);
-                setCurrentPage(response.pages.length - 1);
-                setIsReading(true);
-                setText('');
-                await loadBooks();
-            }
-        } else {
-            // Create new book
-            const response = await simplifyText(text);
-            if (response && response.pages) {
-                setPages(response.pages);
-                setIsReading(true);
-                setCurrentBookId(response.id);
-                setCurrentPage(0);
-                setText('');
-                await loadBooks();
-            }
-        }
-
         await controls.start({
             scale: [1, 0.95, 1],
             transition: { duration: 0.3 }
         });
-    } catch (error) {
-        console.error('Error:', error);
-        if (axios.isAxiosError(error)) {
-            setError(error.response?.data?.error || 'Failed to process text');
+
+        let bookData;
+        
+        if (currentBookId) {
+            console.log('Adding page to existing book:', currentBookId);
+            bookData = await addPage(currentBookId, text);
         } else {
-            setError('An unexpected error occurred');
+            console.log('Creating new book');
+            bookData = await simplifyText(text);
+            setCurrentBookId(bookData.id);
         }
+
+        if (!bookData || !bookData.pages) {
+            throw new Error('Invalid response from server');
+        }
+
+        console.log('Received book data:', bookData);
+        setPages(bookData.pages);
+        setIsReading(true);
+        setText('');
+        setCurrentPage(bookData.pages.length - 1);
+        await loadBooks();
+    } catch (error) {
+        console.error('Full error details:', error);
+        setError('Failed to process text');
     } finally {
         setIsProcessing(false);
     }
@@ -159,81 +187,100 @@ const handleToggleSidebar = () => {
   setIsSidebarOpen(!isSidebarOpen);
 };
 
+const handleAddPageClick = () => {
+    if (currentBookId) {
+        const currentBook = books.find(book => book.id === currentBookId);
+        console.log('Current book:', currentBook);
+        
+        // Check if this is the first page
+        if (currentBook && currentBook.pages.length === 1) {
+            console.log('Showing title dialog for second page');
+            setSuggestedTitle(currentBook.title || 'Untitled Book');
+            setShowNameDialog(true);
+        }
+        
+        // Switch to input view
+        setIsReading(false);
+        setText('');
+    }
+};
+
 return (
   <div className={`min-h-screen transition-colors duration-500 ${isDarkMode ? 'bg-gray-900' : 'bg-[#F4F1EA]'}`}>
     {/* Header */}
     <motion.nav 
-      className={`p-4 ${isDarkMode ? 'bg-gray-800' : 'bg-white'} shadow-sm`}
-      initial={{ y: -50 }}
-      animate={{ y: 0 }}
-      transition={{ type: "spring", stiffness: 100 }}
+      className={`fixed top-0 left-0 right-0 z-40 px-6 py-4 ${
+        isDarkMode ? 'bg-[#0F172A]' : 'bg-white'
+      } shadow-sm`}
     >
-      <div className="max-w-7xl mx-auto flex justify-between items-center">
+      <div className="max-w-7xl mx-auto grid grid-cols-3 items-center">
+        <div className="flex items-center">
+          {!isSidebarOpen && (
+            <motion.button
+              onClick={handleToggleSidebar}
+              className={`flex items-center space-x-2 p-2 rounded-lg ${
+                isDarkMode ? 'hover:bg-gray-800' : 'hover:bg-gray-100'
+              }`}
+            >
+              <Menu className={`w-5 h-5 ${
+                isDarkMode ? 'text-amber-400' : 'text-amber-600'
+              }`} />
+              <span className={`text-sm ${
+                isDarkMode ? 'text-gray-400' : 'text-gray-600'
+              }`}>Library</span>
+            </motion.button>
+          )}
+        </div>
+
         <motion.div 
-          className="flex items-center space-x-3"
+          className="flex items-center justify-center"
           whileHover={{ scale: 1.02 }}
         >
-          <BookMarked className={`w-8 h-8 ${isDarkMode ? 'text-amber-400' : 'text-amber-600'}`} />
-          <h1 className={`text-2xl font-serif font-bold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
+          <BookOpen className={`w-6 h-6 ${isDarkMode ? 'text-amber-400' : 'text-amber-600'}`} />
+          <h1 className={`text-xl font-semibold ml-3 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
             BookBuddy
           </h1>
         </motion.div>
-        
-        <div className="flex items-center space-x-4">
+
+        <div className="flex justify-end">
           <motion.button
             whileHover={{ scale: 1.1, rotate: 15 }}
             whileTap={{ scale: 0.9 }}
-            onClick={() => setIsDarkMode(!isDarkMode)}
-            className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
+            onClick={() => {
+              const newMode = !isDarkMode;
+              setIsDarkMode(newMode);
+              localStorage.setItem('darkMode', JSON.stringify(newMode));
+            }}
+            className={`p-2 rounded-lg ${
+              isDarkMode ? 'hover:bg-gray-800' : 'hover:bg-gray-100'
+            }`}
           >
             {isDarkMode ? 
               <Sun className="w-5 h-5 text-amber-400" /> : 
               <Moon className="w-5 h-5 text-gray-600" />
             }
           </motion.button>
-          <motion.button
-            whileHover={{ scale: 1.1 }}
-            className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
-          >
-            <Settings className={`w-5 h-5 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`} />
-          </motion.button>
         </div>
       </div>
     </motion.nav>
 
-    {/* Sidebar Toggle Button */}
-    {!isSidebarOpen && (
-      <motion.button
-        onClick={handleToggleSidebar}
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        className={`fixed left-4 top-20 p-2 rounded-lg z-20
-                   ${isDarkMode ? 
-                     'bg-gray-800 hover:bg-gray-700' : 
-                     'bg-white hover:bg-gray-100'} 
-                   shadow-lg transition-colors duration-200`}
-      >
-        <BookOpen className={`w-5 h-5 ${isDarkMode ? 'text-amber-400' : 'text-amber-600'}`} />
-      </motion.button>
-    )}
-
     <div className="flex">
-      {/* Sidebar */}
-      {isSidebarOpen && (
-        <Sidebar
-          isOpen={isSidebarOpen}
-          isDarkMode={isDarkMode}
-          currentBookId={currentBookId}
-          books={books}
-          onNewBook={handleNewBook}
-          onBookSelect={handleBookSelect}
-          onClose={handleToggleSidebar}
-        />
-      )}
+      <AnimatePresence>
+        {isSidebarOpen && (
+          <Sidebar
+            isDarkMode={isDarkMode}
+            currentBookId={currentBookId}
+            books={books}
+            onNewBook={handleNewBook}
+            onBookSelect={handleBookSelect}
+            onCloseSidebar={handleToggleSidebar}
+          />
+        )}
+      </AnimatePresence>
       
       {/* Main Content */}
-      <div className={`flex-1 ${isSidebarOpen ? 'ml-64' : 'ml-0'} transition-all duration-300`}>
-        <div className="max-w-7xl mx-auto p-8">
+      <div className="flex-1 transition-all duration-300 mt-20">
+        <div className="max-w-3xl mx-auto p-8">
           <AnimatePresence mode="wait">
             {!isReading ? (
               // Input View
@@ -242,10 +289,10 @@ return (
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
-                className="max-w-2xl mx-auto"
+                className="w-full"
               >
                 <motion.div
-                  className={`${isDarkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-xl p-8`}
+                  className={`${isDarkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-xl p-10`}
                   animate={controls}
                 >
                   {error && (
@@ -267,7 +314,7 @@ return (
                         }
                       }}
                       maxLength={2000}
-                      className={`w-full h-48 p-6 rounded-lg resize-none text-lg
+                      className={`w-full h-64 p-8 rounded-lg resize-none text-lg
                               transition-colors duration-200 
                               ${isDarkMode ? 
                                 'bg-gray-700 text-gray-100 placeholder-gray-400' : 
@@ -439,20 +486,7 @@ return (
                     
                     {/* Add Page Button */}
                     <motion.button
-                        onClick={() => {
-                            if (currentBookId) {
-                                if (pages.length === 1) {  // If this is the first page (about to add second)
-                                    setSuggestedTitle('Untitled Book');
-                                    setShowNameDialog(true);  // Show the title dialog
-                                }
-                                setIsReading(false);  // Go back to input mode
-                                setText('');  // Clear existing text
-                            } else {
-                                // First time creating a book, don't show dialog yet
-                                setIsReading(false);
-                                setText('');
-                            }
-                        }}
+                        onClick={handleAddPageClick}
                         whileHover={{ scale: 1.05, y: -5 }}
                         whileTap={{ scale: 0.95 }}
                         className={`flex-shrink-0 w-32 h-44 rounded-lg border-2 border-dashed
@@ -474,9 +508,7 @@ return (
         </div>
       </div>
     </div>
-
-    {/* Name Book Dialog */}
-    <NameBookDialog
+    <NameBookDialog 
         isOpen={showNameDialog}
         suggestedTitle={suggestedTitle}
         onClose={() => setShowNameDialog(false)}
