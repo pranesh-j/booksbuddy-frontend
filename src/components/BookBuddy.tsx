@@ -176,7 +176,7 @@ const BookBuddy = () => {
         
         if (currentBookId) {
             // For adding a new page to existing book
-            bookData = await addPage(currentBookId, text, userId);
+            bookData = await addPage(currentBookId, text);
             if (!bookData || !bookData.pages) {
                 throw new Error('Invalid response from server');
             }
