@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Camera, Plus, ChevronLeft, ChevronRight, BookOpen, Sun, Moon, BookMarked, Settings, Menu } from 'lucide-react';
 import { motion, AnimatePresence, useAnimation } from 'framer-motion';
 import axios from 'axios';
@@ -31,7 +31,7 @@ const BookBuddy = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [suggestedTitle, setSuggestedTitle] = useState<string>('');
   const [showNameDialog, setShowNameDialog] = useState(false);
-  const [userId, setUserId] = useState(() => {
+  const [userId, setUserId] = useState<string | null>(() => {
     if (typeof window !== 'undefined') {
       const id = localStorage.getItem('userId');
       if (!id) {
@@ -53,12 +53,7 @@ const BookBuddy = () => {
   };
 
   // Load books on component mount
-  useEffect(() => {
-    loadBooks();
-  }, []);
-
-  // Function definitions
-  const loadBooks = async () => {
+  const loadBooks = useCallback(async () => {
     try {
       if (!userId) return;
       const allBooks = await getAllBooks(userId);
@@ -66,8 +61,15 @@ const BookBuddy = () => {
     } catch (error) {
       console.error('Error loading books:', error);
     }
-  };
+  }, [userId]);
 
+  useEffect(() => {
+    if (userId) {
+        loadBooks();
+    }
+  }, [userId, loadBooks]);
+
+  // Function definitions
   const handleBookSelect = async (bookId: number) => {
     try {
         // If we're already on this book, don't reload it

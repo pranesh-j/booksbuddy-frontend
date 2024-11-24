@@ -27,8 +27,10 @@ export const getBook = async (bookId: number): Promise<Book> => {
   return response.data;
 };
 
-export const getAllBooks = async (): Promise<Book[]> => {
-  const response = await api.get('/books/');
+export const getAllBooks = async (userId: string): Promise<Book[]> => {
+  const response = await axios.get(`${API_URL}/books`, {
+    params: { userId }
+  });
   return response.data;
 };
 
