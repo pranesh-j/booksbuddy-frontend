@@ -8,14 +8,15 @@ import Sidebar from './Sidebar';
 import { NameBookDialog } from './NameBookDialog';
 import { getAllBooks, getBook, updateBookTitle, simplifyText, addPage, uploadImage } from '@/lib/api';
 import type { Book, Page } from '@/types';
+import { useDarkMode } from '@/hooks/useDarkMode';
 
 const BookBuddy = () => {
+  const [isDarkMode, setIsDarkMode] = useDarkMode();
   // State definitions
   const [isReading, setIsReading] = useState(false);
   const [currentPage, setCurrentPage] = useState(0);
   const [text, setText] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
-  const [isDarkMode, setIsDarkMode] = useState(false);
   const [currentBookId, setCurrentBookId] = useState<number | null>(null);
   const [pages, setPages] = useState<Page[]>([]);
   const [error, setError] = useState<string | null>(null);
