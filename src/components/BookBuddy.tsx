@@ -6,7 +6,7 @@ import { motion, AnimatePresence, useAnimation } from 'framer-motion';
 import axios from 'axios';
 import Sidebar from './Sidebar';
 import { NameBookDialog } from './NameBookDialog';
-import { getAllBooks, getBook, updateBookTitle, simplifyText, addPage } from '@/lib/api';
+import { getAllBooks, getBook, updateBookTitle, simplifyText, addPage, uploadImage } from '@/lib/api';
 import type { Book, Page } from '@/types';
 
 const BookBuddy = () => {
@@ -97,32 +97,13 @@ const BookBuddy = () => {
     setError(null);
 
     try {
-        const response = await axios.post('http://localhost:8000/api/upload-image/', formData, {
-            headers: {
-                'Content-Type': 'multipart/form-data',
-            },
-        });
-
-        if (response.data?.extracted_text) {
-            // Clean up any remaining formatting
-            const cleanText = response.data.extracted_text
-                .replace(/\[TextBlock\(text=|"\)]/g, '')
-                .replace(/\\n/g, '\n')
-                .trim();
-            
-            setText(cleanText);
-        } else {
-            throw new Error('No text extracted from image');
-        }
-    } catch (err) {
-        let errorMessage = 'Failed to process image';
-        if (axios.isAxiosError(err) && err.response?.data?.error) {
-            errorMessage = err.response.data.error;
-        } else if (err instanceof Error) {
-            errorMessage = err.message;
-        }
-        setError(errorMessage);
-        console.error('Error uploading image:', err);
+        const extractedText = await uploadImage(formData);
+        setText(extractedText.replace(/\[TextBlock\(text=|"\)]/g, '')
+            .replace(/\\n/g, '\n')
+            .trim());
+    } catch (error) {
+        setError('Failed to process image');
+        console.error('Error uploading image:', error);
     } finally {
         setIsProcessing(false);
     }

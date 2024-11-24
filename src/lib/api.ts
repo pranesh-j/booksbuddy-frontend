@@ -5,6 +5,9 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://booksbuddy-backend.o
 
 const api = axios.create({
   baseURL: API_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  }
 });
 
 // api.ts
@@ -44,6 +47,20 @@ export const addPage = async (bookId: number, text: string): Promise<Book> => {
     return response.data;
   } catch (error) {
     console.error('Error adding page:', error);
+    throw error;
+  }
+};
+
+export const uploadImage = async (formData: FormData): Promise<string> => {
+  try {
+    const response = await api.post('/upload-image/', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data.extracted_text;
+  } catch (error) {
+    console.error('Error uploading image:', error);
     throw error;
   }
 };
