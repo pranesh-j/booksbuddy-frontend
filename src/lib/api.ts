@@ -12,9 +12,9 @@ const api = axios.create({
 });
 
 // api.ts
-export const simplifyText = async (text: string): Promise<Book> => {
+export const simplifyText = async (text: string, userId: string): Promise<Book> => {
   try {
-    const response = await api.post('/process/', { text });
+    const response = await api.post('/process/', { text, userId });
     return response.data;
   } catch (error) {
     console.error('Error simplifying text:', error);
