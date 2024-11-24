@@ -221,12 +221,13 @@ return (
       {/* Sidebar */}
       {isSidebarOpen && (
         <Sidebar
+          isOpen={isSidebarOpen}
           isDarkMode={isDarkMode}
           currentBookId={currentBookId}
           books={books}
           onNewBook={handleNewBook}
           onBookSelect={handleBookSelect}
-          onCloseSidebar={handleToggleSidebar}
+          onClose={handleToggleSidebar}
         />
       )}
       

@@ -5,12 +5,23 @@ import type { Book } from '@/types';
 
 interface SidebarProps {
     isOpen: boolean;
-    onClose: () => void;
-    children: React.ReactNode;
     isDarkMode: boolean;
+    currentBookId: number | null;
+    books: Book[];
+    onNewBook: () => void;
+    onBookSelect: (bookId: number) => Promise<void>;
+    onClose: () => void;
 }
 
-const Sidebar = ({ isOpen, onClose, children, isDarkMode }: SidebarProps) => {
+const Sidebar = ({ 
+    isOpen, 
+    isDarkMode,
+    currentBookId,
+    books,
+    onNewBook,
+    onBookSelect,
+    onClose 
+}: SidebarProps) => {
     return (
         <AnimatePresence>
             {isOpen && (
@@ -24,7 +35,7 @@ const Sidebar = ({ isOpen, onClose, children, isDarkMode }: SidebarProps) => {
                         onClick={onClose}
                     />
                     
-                    {/* Sidebar */}
+                    {/* Sidebar Content */}
                     <motion.div
                         initial={{ x: '-100%' }}
                         animate={{ x: 0 }}
@@ -32,9 +43,39 @@ const Sidebar = ({ isOpen, onClose, children, isDarkMode }: SidebarProps) => {
                         transition={{ type: 'spring', damping: 20 }}
                         className={`fixed left-0 top-0 h-full w-64 md:w-72 
                                    ${isDarkMode ? 'bg-gray-800' : 'bg-white'} 
-                                   shadow-xl z-50 md:relative md:shadow-none`}
+                                   shadow-xl z-50 md:relative md:shadow-none
+                                   overflow-y-auto`}
                     >
-                        {children}
+                        <div className="p-4">
+                            <button
+                                onClick={onNewBook}
+                                className={`w-full flex items-center space-x-2 p-3 rounded-lg
+                                          ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}
+                                          transition-colors duration-200`}
+                            >
+                                <Plus className={isDarkMode ? 'text-gray-300' : 'text-gray-600'} />
+                                <span className={isDarkMode ? 'text-gray-300' : 'text-gray-600'}>New Book</span>
+                            </button>
+                            
+                            <div className="mt-6">
+                                {books.map((book) => (
+                                    <button
+                                        key={book.id}
+                                        onClick={() => onBookSelect(book.id)}
+                                        className={`w-full flex items-center space-x-2 p-3 rounded-lg
+                                                  ${book.id === currentBookId ? 
+                                                    (isDarkMode ? 'bg-gray-700' : 'bg-amber-50') : 
+                                                    (isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100')}
+                                                  transition-colors duration-200`}
+                                    >
+                                        <BookOpen className={isDarkMode ? 'text-gray-300' : 'text-gray-600'} />
+                                        <span className={isDarkMode ? 'text-gray-300' : 'text-gray-600'}>
+                                            {book.title}
+                                        </span>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
                     </motion.div>
                 </>
             )}
