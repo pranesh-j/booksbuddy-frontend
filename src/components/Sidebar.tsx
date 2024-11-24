@@ -15,21 +15,21 @@ interface SidebarProps {
 const Sidebar = ({ isDarkMode, currentBookId, books, onNewBook, onBookSelect, onCloseSidebar }: SidebarProps) => {
     return (
         <motion.div 
-            initial={{ x: -300 }}
+            initial={{ x: -280 }}
             animate={{ x: 0 }}
-            exit={{ x: -300 }}
+            exit={{ x: -280 }}
             transition={{ type: "spring", stiffness: 100, damping: 20 }}
-            className={`fixed left-0 top-0 h-full w-72 z-50 shadow-xl
+            className={`fixed left-0 top-0 h-full w-[240px] sm:w-[260px] md:w-[280px] z-50 shadow-xl
                         ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}
         >
-            <div className="p-6">
-                <div className="flex items-center justify-between mb-8">
+            <div className="p-4">
+                <div className="flex items-center justify-between mb-6">
                     <div className="flex items-center space-x-3">
                         <Menu className={`w-5 h-5 ${
                             isDarkMode ? 'text-amber-400' : 'text-amber-600'
                         }`} />
-                        <span className={`text-sm ${
-                            isDarkMode ? 'text-gray-400' : 'text-gray-600'
+                        <span className={`text-sm font-medium ${
+                            isDarkMode ? 'text-gray-300' : 'text-gray-700'
                         }`}>Library</span>
                     </div>
                     <motion.button
@@ -47,24 +47,22 @@ const Sidebar = ({ isDarkMode, currentBookId, books, onNewBook, onBookSelect, on
                 </div>
                 
                 {/* New Book Button */}
-                <div className="p-4">
-                    <motion.button
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        onClick={onNewBook}
-                        className={`w-full flex items-center space-x-2 px-4 py-3 rounded-lg
-                            ${isDarkMode ? 
-                                'bg-amber-500/10 text-amber-400 hover:bg-amber-500/20' : 
-                                'bg-amber-50 text-amber-600 hover:bg-amber-100'
-                            } transition-colors duration-200`}
-                    >
-                        <Plus className="w-5 h-5" />
-                        <span className="font-medium">New Book</span>
-                    </motion.button>
-                </div>
+                <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={onNewBook}
+                    className={`w-full flex items-center space-x-2 px-4 py-3 rounded-lg mb-4
+                        ${isDarkMode ? 
+                            'bg-amber-500/10 text-amber-400 hover:bg-amber-500/20' : 
+                            'bg-amber-50 text-amber-600 hover:bg-amber-100'
+                        } transition-colors duration-200`}
+                >
+                    <Plus className="w-5 h-5" />
+                    <span className="font-medium">New Book</span>
+                </motion.button>
 
                 {/* Book List */}
-                <div className="flex-1 overflow-auto px-4 py-2">
+                <div className="overflow-auto max-h-[calc(100vh-140px)]">
                     {books.map((book) => (
                         <motion.button
                             key={book.id}
@@ -80,10 +78,8 @@ const Sidebar = ({ isDarkMode, currentBookId, books, onNewBook, onBookSelect, on
                                     ''
                                 }`}
                         >
-                            <BookOpen className={`w-5 h-5 ${
-                                isDarkMode ? 'text-gray-400' : 'text-gray-500'
-                            }`} />
-                            <span className={`font-medium ${
+                            <BookOpen className="w-5 h-5 flex-shrink-0" />
+                            <span className={`font-medium truncate text-sm ${
                                 isDarkMode ? 'text-gray-300' : 'text-gray-700'
                             }`}>
                                 {book.title || "Untitled Book"}
