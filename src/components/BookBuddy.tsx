@@ -31,6 +31,18 @@ const BookBuddy = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [suggestedTitle, setSuggestedTitle] = useState<string>('');
   const [showNameDialog, setShowNameDialog] = useState(false);
+  const [userId, setUserId] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const id = localStorage.getItem('userId');
+      if (!id) {
+        const newId = `user_${Math.random().toString(36).substr(2, 9)}`;
+        localStorage.setItem('userId', newId);
+        return newId;
+      }
+      return id;
+    }
+    return null;
+  });
 
   // Animation controls
   const controls = useAnimation();
@@ -48,7 +60,8 @@ const BookBuddy = () => {
   // Function definitions
   const loadBooks = async () => {
     try {
-      const allBooks = await getAllBooks();
+      if (!userId) return;
+      const allBooks = await getAllBooks(userId);
       setBooks(allBooks);
     } catch (error) {
       console.error('Error loading books:', error);
@@ -147,9 +160,10 @@ const BookBuddy = () => {
   };
 
   const handleSimplify = async () => {
-    if (!text.trim()) return;
+    if (!text.trim() || !userId) return;
     setIsProcessing(true);
     setError(null);
+    
     try {
         await controls.start({
             scale: [1, 0.95, 1],
@@ -159,24 +173,29 @@ const BookBuddy = () => {
         let bookData;
         
         if (currentBookId) {
-            console.log('Adding page to existing book:', currentBookId);
-            bookData = await addPage(currentBookId, text);
+            // For adding a new page to existing book
+            bookData = await addPage(currentBookId, text, userId);
+            if (!bookData || !bookData.pages) {
+                throw new Error('Invalid response from server');
+            }
+            setPages(bookData.pages);
+            setIsReading(true);
+            setText('');
+            setCurrentPage(bookData.pages.length - 1);
         } else {
-            console.log('Creating new book');
-            bookData = await simplifyText(text);
+            // For creating a new book
+            bookData = await simplifyText(text, userId);
+            if (!bookData || !bookData.pages) {
+                throw new Error('Invalid response from server');
+            }
             setCurrentBookId(bookData.id);
+            setPages(bookData.pages);
+            setIsReading(true);
+            setText('');
+            setCurrentPage(0);
         }
-
-        if (!bookData || !bookData.pages) {
-            throw new Error('Invalid response from server');
-        }
-
-        console.log('Received book data:', bookData);
-        setPages(bookData.pages);
-        setIsReading(true);
-        setText('');
-        setCurrentPage(bookData.pages.length - 1);
-        await loadBooks();
+        
+        await loadBooks(); // Refresh the books list
     } catch (error) {
         console.error('Full error details:', error);
         setError('Failed to process text');
