@@ -2,10 +2,10 @@
 /node_modules
 /.pnp
 .pnp.js
-
+/.pnp
 # testing
 /coverage
-
+!.yarn/patches
 # next.js
 /.next/
 /out/
@@ -21,10 +21,10 @@
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-
+.DS_Store
 # local env files
 .env*.local
-
+# debug
 # typescript
 *.tsbuildinfo
 next-env.d.ts
