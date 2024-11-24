@@ -93,7 +93,7 @@ export const FAQ = ({ isDarkMode }: { isDarkMode: boolean }) => {
                     isDarkMode ? 'text-amber-400' : 'text-amber-600'
                 }`}
             >
-                Got Questions? We've Got Answers! 🎯
+                Got Questions? We&apos;ve Got Answers! 🎯
             </motion.h2>
             <div className="space-y-2">
                 {faqs.map((faq, index) => (
