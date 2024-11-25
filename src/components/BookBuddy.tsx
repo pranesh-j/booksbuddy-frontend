@@ -312,14 +312,26 @@ return (
                 // Input View
                 <motion.div 
                   key="input"
-                  initial={{ opacity: 0, y: 20 }}
+                  initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{
+                    duration: 0.3,
+                    ease: [0.4, 0, 0.2, 1],
+                    opacity: { duration: 0.2 },
+                    y: { duration: 0.25 }
+                  }}
                   className="w-full"
                 >
                   <motion.div
                     className={`${isDarkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-xl p-10`}
-                    animate={controls}
+                    initial={{ scale: 0.98, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{
+                      duration: 0.3,
+                      ease: "easeOut",
+                      delay: 0.05
+                    }}
                   >
                     {error && (
                       <div className="mb-4 p-4 bg-red-100 text-red-700 rounded-lg">
@@ -327,9 +339,13 @@ return (
                       </div>
                     )}
                     <motion.div
-                      initial={{ scale: 0.9, opacity: 0 }}
+                      initial={{ scale: 0.98, opacity: 0 }}
                       animate={{ scale: 1, opacity: 1 }}
-                      transition={{ delay: 0.2 }}
+                      transition={{ 
+                        duration: 0.3,
+                        delay: 0.1,
+                        ease: "easeOut"
+                      }}
                       className="mb-6"
                     >
                       <textarea
@@ -341,11 +357,12 @@ return (
                         }}
                         maxLength={2000}
                         className={`w-full h-64 p-8 rounded-lg resize-none text-lg
-                                transition-colors duration-200 
+                                transition-colors duration-300 
                                 ${isDarkMode ? 
                                   'bg-gray-700 text-gray-100 placeholder-gray-400' : 
                                   'bg-gray-50 text-gray-700 placeholder-gray-400'}
-                                focus:ring-2 focus:ring-amber-500 focus:border-transparent`}
+                                focus:ring-2 focus:ring-amber-500 focus:border-transparent
+                                shadow-inner`}
                         placeholder="Paste your text here (maximum 2000 characters)..."
                       />
                       <div className="text-sm text-gray-500 mt-2">
@@ -448,8 +465,8 @@ return (
                             </div>
                           </motion.div>
 
-                          {/* Content with responsive container */}
-                          <div className="container mx-auto px-2 sm:px-4">
+                          {/* Content with proper padding for navigation buttons */}
+                          <div className="px-8 sm:px-12 md:px-16"> {/* Added horizontal padding */}
                             <div className={`font-serif text-base sm:text-lg leading-relaxed
                                         ${isDarkMode ? 'text-gray-100' : 'text-gray-800'}`}>
                               {pages[currentPage]?.content}
@@ -458,27 +475,29 @@ return (
                         </motion.div>
                       </AnimatePresence>
 
-                      {/* Navigation Buttons */}
-                      <div className="absolute top-1/2 -translate-y-1/2 w-full flex justify-between px-4">
+                      {/* Navigation Buttons - Adjusted positioning and styling */}
+                      <div className="absolute top-1/2 -translate-y-1/2 w-full flex justify-between px-2 sm:px-4">
                         <motion.button
                           onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
                           disabled={currentPage === 0}
                           whileHover={{ scale: 1.1 }}
                           whileTap={{ scale: 0.9 }}
-                          className={`p-3 rounded-full ${isDarkMode ? 'bg-gray-700' : 'bg-white'} 
-                                    shadow-lg backdrop-blur-sm disabled:opacity-50`}
+                          className={`p-2 sm:p-3 rounded-full ${isDarkMode ? 'bg-gray-700' : 'bg-white'} 
+                                    shadow-lg backdrop-blur-sm disabled:opacity-50
+                                    hover:bg-opacity-90 transition-all duration-200`}
                         >
-                          <ChevronLeft className={`w-6 h-6 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`} />
+                          <ChevronLeft className={`w-5 h-5 sm:w-6 sm:h-6 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`} />
                         </motion.button>
                         <motion.button
                           onClick={() => setCurrentPage(Math.min(pages.length - 1, currentPage + 1))}
                           disabled={currentPage === pages.length - 1}
                           whileHover={{ scale: 1.1 }}
                           whileTap={{ scale: 0.9 }}
-                          className={`p-3 rounded-full ${isDarkMode ? 'bg-gray-700' : 'bg-white'} 
-                                    shadow-lg backdrop-blur-sm disabled:opacity-50`}
+                          className={`p-2 sm:p-3 rounded-full ${isDarkMode ? 'bg-gray-700' : 'bg-white'} 
+                                    shadow-lg backdrop-blur-sm disabled:opacity-50
+                                    hover:bg-opacity-90 transition-all duration-200`}
                         >
-                          <ChevronRight className={`w-6 h-6 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`} />
+                          <ChevronRight className={`w-5 h-5 sm:w-6 sm:h-6 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`} />
                         </motion.button>
                       </div>
                     </div>
