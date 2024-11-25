@@ -72,27 +72,28 @@ const BookBuddy = () => {
   // Function definitions
   const handleBookSelect = async (bookId: number) => {
     try {
+        if (!userId) return;
+        
         // If we're already on this book, don't reload it
         if (currentBookId === bookId) {
             return;
         }
 
-        const book = await getBook(bookId);
+        const book = await getBook(bookId, userId);
         if (book && book.pages) {
             setCurrentBookId(book.id);
-            setPages(book.pages);  // Make sure pages are properly set
+            setPages(book.pages);
             setIsReading(true);
             setCurrentPage(0);
             setText('');
             
-            // Force a re-render of the pages
-            await loadBooks();  // Refresh the books list to get latest data
+            await loadBooks();  // Refresh the books list
         }
     } catch (error) {
         console.error('Error loading book:', error);
         setError('Failed to load book');
     }
-  };
+};
 
   const handleNewBook = () => {
     setCurrentBookId(null);
@@ -103,8 +104,8 @@ const BookBuddy = () => {
 
   const handleSaveTitle = async (title: string) => {
     try {
-        if (currentBookId) {
-            await updateBookTitle(currentBookId, title);
+        if (currentBookId && userId) {
+            await updateBookTitle(currentBookId, title, userId);
             await loadBooks();
             setShowNameDialog(false);
         }
@@ -116,7 +117,7 @@ const BookBuddy = () => {
 
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file) return;
+    if (!file || !userId) return;
 
     if (!file.type.startsWith('image/')) {
         setError('Please upload an image file');
@@ -125,19 +126,19 @@ const BookBuddy = () => {
 
     const formData = new FormData();
     formData.append('image', file);
+    formData.append('userId', userId);  // Add userId to the form data
 
     setIsProcessing(true);
     setError(null);
 
     try {
-        const response = await axios.post('http://localhost:8000/api/upload-image/', formData, {
+        const response = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/upload-image/`, formData, {
             headers: {
                 'Content-Type': 'multipart/form-data',
             },
         });
 
         if (response.data?.extracted_text) {
-            // Clean up any remaining formatting
             const cleanText = response.data.extracted_text
                 .replace(/\[TextBlock\(text=|"\)]/g, '')
                 .replace(/\\n/g, '\n')
@@ -176,7 +177,7 @@ const BookBuddy = () => {
         
         if (currentBookId) {
             // For adding a new page to existing book
-            bookData = await addPage(currentBookId, text);
+            bookData = await addPage(currentBookId, text, userId);
             if (!bookData || !bookData.pages) {
                 throw new Error('Invalid response from server');
             }
