@@ -28,6 +28,10 @@ const Sidebar = ({
       initial={{ x: -300, opacity: 0 }}
       animate={{ x: 0, opacity: 1 }}
       exit={{ x: -300, opacity: 0 }}
+      transition={{
+        duration: 0.3,
+        ease: [0.4, 0, 0.2, 1]
+      }}
       className={`fixed inset-y-0 left-0 w-72 z-50 ${
         isDarkMode ? 'bg-gray-900' : 'bg-white'
       } shadow-xl`}
