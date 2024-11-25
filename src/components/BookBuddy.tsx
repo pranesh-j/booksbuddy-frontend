@@ -424,16 +424,18 @@ return (
                           animate="animate"
                           exit="exit"
                           variants={pageTransition}
-                          className="p-12"
+                          className="p-4 sm:p-8 md:p-12"
                         >
                           {/* Progress Bar */}
                           <motion.div 
-                            className="mb-8 flex items-center justify-between"
+                            className="mb-4 sm:mb-8 flex items-center justify-between"
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             transition={{ delay: 0.3 }}
                           >
-                            <span className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                            <span className={`text-xs sm:text-sm ${
+                              isDarkMode ? 'text-gray-400' : 'text-gray-500'
+                            }`}>
                               Page {currentPage + 1} of {pages?.length || 0}
                             </span>
                             <div className="w-32 h-1 bg-gray-200 rounded-full overflow-hidden">
@@ -446,10 +448,12 @@ return (
                             </div>
                           </motion.div>
 
-                          {/* Content */}
-                          <div className={`font-serif text-xl leading-relaxed
+                          {/* Content with responsive container */}
+                          <div className="container mx-auto px-2 sm:px-4">
+                            <div className={`font-serif text-base sm:text-lg leading-relaxed
                                         ${isDarkMode ? 'text-gray-100' : 'text-gray-800'}`}>
-                            {pages[currentPage]?.content}
+                              {pages[currentPage]?.content}
+                            </div>
                           </div>
                         </motion.div>
                       </AnimatePresence>
@@ -487,7 +491,7 @@ return (
                     transition={{ delay: 0.3 }}
                     className="max-w-5xl mx-auto"
                   >
-                    <div className="flex items-center space-x-4 overflow-x-auto pb-4 px-4">
+                    <div className="flex items-center space-x-2 sm:space-x-4 overflow-x-auto pb-4 px-2 sm:px-4">
                       {Array.isArray(pages) && pages.map((page, index) => (
                         <motion.div
                           key={index}
